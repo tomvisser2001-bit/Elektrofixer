@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elektrofixer — Administratie</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--y:#F5C518;--b:#0a0a0a;--bm:#111;--card:#161616;--w:#f0eeea;--dim:rgba(240,238,234,0.45);--br:rgba(245,197,24,0.15);--br2:rgba(240,238,234,0.07);--fd:'Barlow Condensed',sans-serif;--fb:'Barlow',sans-serif;--red:#e05252;--green:#4ec97a;--blue:#5b9cf6;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--b);color:var(--w);font-family:var(--fb);font-weight:300;min-height:100vh;overflow-x:hidden;}
+
+/* LAYOUT */
+.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh;}
+
+/* SIDEBAR */
+.sidebar{background:var(--bm);border-right:1px solid var(--br);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.sidebar-logo{padding:24px 20px;border-bottom:1px solid var(--br);display:flex;align-items:center;gap:8px;}
+.ef-lines{display:flex;flex-direction:column;gap:3px;margin-right:2px;}
+.ef-lines span{display:block;height:2px;background:var(--y);}
+.ef-lines span:nth-child(1){width:16px;}
+.ef-lines span:nth-child(2){width:12px;}
+.ef-lines span:nth-child(3){width:8px;}
+.sidebar-wordmark{font-family:var(--fd);font-weight:900;font-size:17px;letter-spacing:0.08em;text-transform:uppercase;color:var(--w);}
+.sidebar-wordmark span{color:var(--y);}
+.sidebar-nav{padding:16px 0;flex:1;}
+.nav-section{font-family:var(--fd);font-size:9px;font-weight:600;letter-spacing:0.28em;text-transform:uppercase;color:rgba(240,238,234,0.25);padding:6px 20px 3px;margin-top:8px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;font-size:13px;color:var(--dim);cursor:pointer;transition:all 0.2s;border-left:2px solid transparent;user-select:none;}
+.nav-item:hover{color:var(--w);background:rgba(245,197,24,0.04);}
+.nav-item.active{color:var(--y);border-left-color:var(--y);background:rgba(245,197,24,0.07);}
+.nav-item svg{width:14px;height:14px;flex-shrink:0;opacity:0.7;}
+.nav-item.active svg{opacity:1;}
+.nav-badge{margin-left:auto;background:var(--y);color:var(--b);font-family:var(--fd);font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;}
+.sidebar-bottom{padding:16px 20px;border-top:1px solid var(--br);}
+.sidebar-contact{font-size:11px;color:rgba(240,238,234,0.3);line-height:1.7;}
+.sidebar-contact strong{color:rgba(240,238,234,0.6);font-weight:500;display:block;margin-bottom:2px;}
+.sync-status{display:flex;align-items:center;gap:6px;font-size:10px;margin-bottom:10px;font-family:var(--fd);letter-spacing:0.08em;text-transform:uppercase;}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+.sync-dot.syncing{background:var(--y);}
+.sync-dot.error{background:var(--red);animation:none;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+
+/* MAIN */
+.main{display:flex;flex-direction:column;min-height:100vh;}
+.topbar{background:rgba(10,10,10,0.92);border-bottom:1px solid var(--br);padding:14px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;backdrop-filter:blur(12px);}
+.topbar-left{display:flex;align-items:center;gap:16px;}
+.topbar-title{font-family:var(--fd);font-weight:700;font-size:18px;text-transform:uppercase;letter-spacing:0.06em;}
+.topbar-sub{font-size:11px;color:var(--dim);letter-spacing:0.04em;}
+.topbar-actions{display:flex;gap:8px;align-items:center;}
+
+/* BUTTONS */
+.btn{font-family:var(--fd);font-weight:700;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;padding:8px 18px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:7px;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);transition:all 0.2s;white-space:nowrap;}
+.btn-y{background:var(--y);color:var(--b);}
+.btn-y:hover{background:#ffe040;transform:translateY(-1px);}
+.btn-ghost{background:transparent;color:var(--dim);border:1px solid var(--br2);clip-path:none;border-radius:2px;}
+.btn-ghost:hover{border-color:rgba(245,197,24,0.4);color:var(--y);}
+.btn-sm{padding:6px 12px;font-size:11px;}
+
+/* CONTENT */
+.content{padding:28px 32px;flex:1;}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px;}
+.stat{background:var(--card);border:1px solid var(--br);padding:20px;position:relative;overflow:hidden;transition:border-color 0.3s;}
+.stat:hover{border-color:rgba(245,197,24,0.35);}
+.stat::before{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--y);transform:scaleX(0);transform-origin:left;transition:transform 0.4s;}
+.stat:hover::before{transform:scaleX(1);}
+.stat-label{font-family:var(--fd);font-size:9px;font-weight:600;letter-spacing:0.25em;text-transform:uppercase;color:var(--dim);margin-bottom:10px;}
+.stat-val{font-family:var(--fd);font-weight:900;font-size:28px;color:var(--y);line-height:1;}
+.stat-sub{font-size:11px;color:var(--dim);margin-top:6px;}
+.stat-icon{position:absolute;top:16px;right:16px;opacity:0.06;color:var(--y);}
+
+/* TABLE CARD */
+.tcard{background:var(--card);border:1px solid var(--br);overflow:hidden;margin-bottom:16px;}
+.tcard-head{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--br);gap:12px;}
+.tcard-title{font-family:var(--fd);font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:0.06em;}
+.search{display:flex;align-items:center;gap:8px;background:rgba(10,10,10,0.6);border:1px solid var(--br2);padding:7px 12px;}
+.search input{background:none;border:none;color:var(--w);font-family:var(--fb);font-size:12px;outline:none;width:180px;}
+.search input::placeholder{color:rgba(240,238,234,0.2);}
+table{width:100%;border-collapse:collapse;}
+thead tr{border-bottom:1px solid var(--br);}
+th{font-family:var(--fd);font-size:9px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:rgba(240,238,234,0.3);padding:10px 14px;text-align:left;}
+td{padding:12px 14px;font-size:12px;border-bottom:1px solid rgba(240,238,234,0.03);transition:background 0.15s;}
+tr:last-child td{border-bottom:none;}
+tbody tr:hover td{background:rgba(245,197,24,0.025);}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;font-family:var(--fd);font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;border-radius:2px;}
+.bg{background:rgba(78,201,122,0.12);color:var(--green);}
+.by{background:rgba(245,197,24,0.12);color:var(--y);}
+.br{background:rgba(224,82,82,0.12);color:var(--red);}
+.bb{background:rgba(91,156,246,0.12);color:var(--blue);}
+.row-acts{display:flex;gap:4px;}
+.ibt{background:transparent;border:1px solid var(--br2);color:rgba(240,238,234,0.3);width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;flex-shrink:0;}
+.ibt:hover{border-color:rgba(245,197,24,0.5);color:var(--y);}
+.ibt.rd:hover{border-color:rgba(224,82,82,0.5);color:var(--red);}
+.ibt.ml:hover{border-color:rgba(91,156,246,0.5);color:var(--blue);}
+.empty{padding:48px;text-align:center;color:rgba(240,238,234,0.15);}
+.empty svg{margin-bottom:12px;display:block;margin-left:auto;margin-right:auto;}
+.empty p{font-family:var(--fd);font-size:13px;text-transform:uppercase;letter-spacing:0.12em;}
+
+/* TABS */
+.tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid var(--br);}
+.tab{font-family:var(--fd);font-size:12px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;padding:9px 18px;cursor:pointer;color:var(--dim);border-bottom:2px solid transparent;transition:all 0.2s;margin-bottom:-1px;}
+.tab:hover{color:var(--w);}
+.tab.active{color:var(--y);border-bottom-color:var(--y);}
+
+/* VIEWS */
+.view{display:none;}
+.view.active{display:block;}
+
+/* MODAL */
+.mo{position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity 0.22s;}
+.mo.open{opacity:1;pointer-events:all;}
+.mbox{background:var(--card);border:1px solid var(--br);width:100%;max-width:740px;max-height:92vh;overflow-y:auto;transform:translateY(14px);transition:transform 0.28s;}
+.mo.open .mbox{transform:translateY(0);}
+.mhead{padding:22px 28px 16px;border-bottom:1px solid var(--br);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--card);z-index:1;}
+.mhead-title{font-family:var(--fd);font-weight:900;font-size:22px;text-transform:uppercase;letter-spacing:0.06em;}
+.mclose{background:transparent;border:1px solid var(--br2);color:var(--dim);width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:all 0.2s;}
+.mclose:hover{border-color:var(--y);color:var(--y);}
+.mbody{padding:24px 28px;}
+.mfoot{padding:14px 28px;border-top:1px solid var(--br);display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:var(--card);}
+
+/* FORM */
+.fs{margin-bottom:20px;}
+.fs-title{font-family:var(--fd);font-size:10px;font-weight:600;letter-spacing:0.22em;text-transform:uppercase;color:var(--y);margin-bottom:12px;padding-bottom:7px;border-bottom:1px solid var(--br);}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.frow.t{grid-template-columns:1fr 1fr 1fr;}
+.frow.s{grid-template-columns:1fr;}
+.fg{display:flex;flex-direction:column;gap:5px;}
+.fl{font-family:var(--fd);font-size:9px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:rgba(240,238,234,0.3);}
+.fi,.fsel,.fta{background:rgba(10,10,10,0.7);border:1px solid var(--br2);color:var(--w);font-family:var(--fb);font-size:12px;padding:9px 12px;outline:none;transition:border-color 0.2s;width:100%;}
+.fi:focus,.fsel:focus,.fta:focus{border-color:var(--y);}
+.fsel option{background:var(--card);}
+.fta{resize:vertical;min-height:65px;}
+
+/* KLANT SELECTOR */
+.ksel-bar{background:rgba(10,10,10,0.5);border:1px solid var(--br2);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.ksel-info{font-size:12px;color:rgba(240,238,234,0.3);}
+.ksel-info strong{color:var(--w);font-weight:500;}
+.ksel-btn{font-family:var(--fd);font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;background:transparent;border:1px solid var(--br);color:var(--y);padding:5px 12px;cursor:pointer;transition:all 0.2s;}
+.ksel-btn:hover{background:rgba(245,197,24,0.08);}
+
+/* LINE ITEMS */
+.litems{border:1px solid var(--br2);margin-bottom:10px;}
+.lhead{display:grid;grid-template-columns:1fr 72px 96px 96px 32px;gap:6px;padding:7px 10px;background:rgba(245,197,24,0.04);border-bottom:1px solid var(--br2);}
+.lhead span{font-family:var(--fd);font-size:9px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:rgba(240,238,234,0.25);}
+.lrow{display:grid;grid-template-columns:1fr 72px 96px 96px 32px;gap:6px;padding:7px 10px;border-bottom:1px solid rgba(240,238,234,0.03);align-items:center;}
+.lrow:last-child{border-bottom:none;}
+.lrow input{background:rgba(10,10,10,0.6);border:1px solid transparent;color:var(--w);font-family:var(--fb);font-size:12px;padding:6px 8px;outline:none;width:100%;transition:border-color 0.2s;}
+.lrow input:focus{border-color:rgba(245,197,24,0.4);}
+.ltot{font-family:var(--fd);font-weight:700;font-size:13px;color:var(--y);}
+.lrm{background:transparent;border:none;color:rgba(240,238,234,0.2);cursor:pointer;font-size:14px;padding:3px;transition:color 0.2s;display:flex;align-items:center;justify-content:center;}
+.lrm:hover{color:var(--red);}
+.ladd{background:transparent;border:1px dashed rgba(245,197,24,0.2);color:rgba(245,197,24,0.5);font-family:var(--fd);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;padding:9px;width:100%;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:7px;}
+.ladd:hover{background:rgba(245,197,24,0.05);border-color:var(--y);color:var(--y);}
+.tbox{background:rgba(10,10,10,0.5);border:1px solid var(--br);padding:14px 16px;margin-top:8px;}
+.trow{display:flex;justify-content:space-between;font-size:12px;padding:4px 0;color:var(--dim);}
+.trow.tot{border-top:1px solid var(--br);margin-top:6px;padding-top:10px;font-family:var(--fd);font-weight:700;font-size:16px;color:var(--y);}
+
+/* KLANT PICKER */
+.kplist{max-height:300px;overflow-y:auto;}
+.kpitem{display:flex;align-items:center;justify-content:space-between;padding:13px 20px;border-bottom:1px solid var(--br2);cursor:pointer;transition:background 0.15s;}
+.kpitem:hover{background:rgba(245,197,24,0.05);}
+.kpitem:last-child{border-bottom:none;}
+.kpname{font-weight:500;font-size:13px;color:var(--w);}
+.kpdet{font-size:11px;color:var(--dim);margin-top:2px;}
+.kparrow{color:var(--y);font-size:16px;opacity:0.6;}
+
+/* LOADING */
+.loading{display:flex;align-items:center;justify-content:center;padding:48px;gap:12px;color:var(--dim);font-family:var(--fd);font-size:13px;letter-spacing:0.12em;text-transform:uppercase;}
+.spin{width:18px;height:18px;border:2px solid var(--br);border-top-color:var(--y);border-radius:50%;animation:spin 0.7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--card);border:1px solid var(--y);color:var(--y);font-family:var(--fd);font-size:12px;letter-spacing:0.1em;text-transform:uppercase;padding:12px 18px;z-index:300;transform:translateY(70px);opacity:0;transition:all 0.3s;display:flex;align-items:center;gap:8px;}
+.toast.show{transform:translateY(0);opacity:1;}
+
+/* PRINT */
+#printArea{display:none;}
+@media print{
+  @page{margin:0;size:A4;}
+  body>*:not(#printArea){display:none!important;}
+  #printArea{display:block!important;margin:0;padding:0;}
+  .pp{background:#fff;color:#111;font-family:'Barlow',sans-serif;font-weight:300;padding:0;margin:0;font-size:11px;display:flex;flex-direction:column;height:297mm;width:210mm;}
+  .ptop{background:#0a0a0a;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;}
+  .pln{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:22px;text-transform:uppercase;letter-spacing:0.08em;color:#fff;}
+  .pln span{color:#F5C518;}
+  .pls{font-size:9px;color:rgba(255,255,255,0.45);margin-top:3px;line-height:1.5;}
+  .pdb{text-align:right;}
+  .pdt{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:30px;text-transform:uppercase;letter-spacing:0.1em;color:#F5C518;line-height:1;}
+  .pdn{font-size:10px;color:rgba(255,255,255,0.5);margin-top:2px;}
+  .pstr{height:3px;background:#F5C518;}
+  .pbod{padding:16px 28px;flex:1;}
+  .pmeta{display:flex;justify-content:space-between;margin-bottom:12px;gap:16px;}
+  .pml{font-family:'Barlow Condensed',sans-serif;font-size:8px;font-weight:600;letter-spacing:0.22em;text-transform:uppercase;color:#aaa;margin-bottom:3px;}
+  .pmv{font-size:11px;color:#333;line-height:1.4;}
+  .ppar{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px;padding:10px 14px;background:#f8f8f8;border-left:3px solid #F5C518;}
+  .pparl{font-family:'Barlow Condensed',sans-serif;font-size:8px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:#aaa;margin-bottom:3px;}
+  .pparn{font-weight:500;font-size:12px;color:#111;margin-bottom:2px;}
+  .ppard{font-size:10px;color:#666;line-height:1.5;}
+  .ptbl{width:100%;border-collapse:collapse;margin-bottom:10px;}
+  .ptbl thead tr{background:#0a0a0a;}
+  .ptbl th{color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;padding:6px 10px;text-align:left;}
+  .ptbl th:last-child,.ptbl td:last-child{text-align:right;}
+  .ptbl td{padding:6px 10px;font-size:11px;color:#333;border-bottom:1px solid #eee;}
+  .ptbl tbody tr:nth-child(even) td{background:#fafafa;}
+  .ptwrap{display:flex;justify-content:flex-end;margin-bottom:10px;}
+  .ptot{width:230px;}
+  .ptotr{display:flex;justify-content:space-between;padding:4px 0;font-size:11px;color:#666;border-bottom:1px solid #f0f0f0;}
+  .ptotg{display:flex;justify-content:space-between;padding:8px 12px;background:#0a0a0a;margin-top:3px;}
+  .ptotg span:first-child{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:0.08em;color:#F5C518;}
+  .ptotg span:last-child{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:15px;color:#fff;}
+  .pnote{background:#f8f8f8;border-left:3px solid #F5C518;padding:8px 12px;font-size:9px;color:#555;line-height:1.55;margin-bottom:10px;}
+  .pnotel{font-family:'Barlow Condensed',sans-serif;font-size:8px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:#aaa;margin-bottom:4px;}
+  .pdis-block{margin-top:auto;}
+  .pdis{padding:8px 28px;font-size:8px;color:#999;line-height:1.6;border-top:1px solid #eee;background:#fafafa;}
+  .pfoot{background:#0a0a0a;padding:9px 28px;display:flex;justify-content:space-between;align-items:center;}
+  .pfoot span{font-size:9px;color:rgba(255,255,255,0.35);letter-spacing:0.04em;}
+  .pfoot-acc{color:#F5C518!important;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:0.1em;font-size:10px!important;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div style="display:flex;align-items:center;gap:6px;">
+      <div class="ef-lines"><span></span><span></span><span></span></div>
+      <svg width="13" height="18" viewBox="0 0 20 28" fill="none" style="margin:0 6px 0 2px"><polygon points="13,0 3,14 9,14 7,28 17,12 11,12" fill="#F5C518"/></svg>
+    </div>
+    <div class="sidebar-wordmark">Elektro<span>fixer</span></div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Overzicht</div>
+    <div class="nav-item active" onclick="showView('dashboard',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard
+    </div>
+    <div class="nav-section">Documenten</div>
+    <div class="nav-item" onclick="showView('facturen',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Facturen
+      <span class="nav-badge" id="nb-f">0</span>
+    </div>
+    <div class="nav-item" onclick="showView('offertes',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="11 17 13 19 16 15"/></svg>Offertes
+      <span class="nav-badge" id="nb-o">0</span>
+    </div>
+    <div class="nav-section">Relaties</div>
+    <div class="nav-item" onclick="showView('klanten',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Klanten
+      <span class="nav-badge" id="nb-k">0</span>
+    </div>
+  </nav>
+  <div class="sidebar-bottom">
+    <div class="sync-status" id="syncStatus">
+      <div class="sync-dot" id="syncDot"></div>
+      <span id="syncText">Gesynchroniseerd</span>
+    </div>
+    <div class="sidebar-contact">
+      <strong>Elektrofixer</strong>
+      KvK: 42063162<br>
+      +31 6 24 096 236
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div>
+        <div class="topbar-title" id="topbarTitle">Dashboard</div>
+        <div class="topbar-sub" id="topbarSub">Overzicht van je administratie</div>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost btn-sm" onclick="syncFromSheets()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.45"/></svg>
+        Sync
+      </button>
+      <button class="btn btn-ghost btn-sm" onclick="openModal('factuur')">+ Factuur</button>
+      <button class="btn btn-y btn-sm" onclick="openModal('offerte')">+ Offerte</button>
+    </div>
+  </div>
+  <div class="content">
+
+    <div class="view active" id="view-dashboard">
+      <div class="stats" id="statsRow"></div>
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('fr',this)">Recente facturen</div>
+        <div class="tab" onclick="switchTab('or',this)">Recente offertes</div>
+      </div>
+      <div id="fr" class="tcard"></div>
+      <div id="or" class="tcard" style="display:none;"></div>
+    </div>
+
+    <div class="view" id="view-facturen">
+      <div class="tcard">
+        <div class="tcard-head">
+          <div class="tcard-title">Alle facturen</div>
+          <div class="search"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" placeholder="Zoeken..." oninput="filterTable('ft',this.value)"></div>
+        </div>
+        <div id="ft"></div>
+      </div>
+    </div>
+
+    <div class="view" id="view-offertes">
+      <div class="tcard">
+        <div class="tcard-head">
+          <div class="tcard-title">Alle offertes</div>
+          <div class="search"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" placeholder="Zoeken..." oninput="filterTable('ot',this.value)"></div>
+        </div>
+        <div id="ot"></div>
+      </div>
+    </div>
+
+    <div class="view" id="view-klanten">
+      <div class="tcard">
+        <div class="tcard-head">
+          <div class="tcard-title">Klanten</div>
+          <button class="btn btn-y btn-sm" onclick="openKlantModal()">+ Nieuwe klant</button>
+        </div>
+        <div id="kt"></div>
+      </div>
+    </div>
+
+  </div>
+</main>
+</div>
+
+<!-- DOC MODAL -->
+<div class="mo" id="docModal" onclick="closeMO(event,'docModal')">
+  <div class="mbox">
+    <div class="mhead">
+      <div class="mhead-title" id="modalTitle">Nieuwe factuur</div>
+      <button class="mclose" onclick="closeModal('docModal')">✕</button>
+    </div>
+    <div class="mbody">
+      <input type="hidden" id="docType" value="factuur">
+      <input type="hidden" id="editDocId" value="">
+      <div class="fs">
+        <div class="fs-title">Klant</div>
+        <div class="ksel-bar">
+          <div class="ksel-info" id="selKlantInfo">Geen klant geselecteerd</div>
+          <button class="ksel-btn" onclick="openKlantPicker()">Kies klant ▾</button>
+        </div>
+        <div class="frow"><div class="fg"><label class="fl">Naam / Bedrijf</label><input type="text" class="fi" id="cName" placeholder="Jan de Vries"></div><div class="fg"><label class="fl">E-mail</label><input type="email" class="fi" id="cEmail"></div></div>
+        <div class="frow"><div class="fg"><label class="fl">Adres</label><input type="text" class="fi" id="cAddr"></div><div class="fg"><label class="fl">Telefoon</label><input type="text" class="fi" id="cTel"></div></div>
+      </div>
+      <div class="fs">
+        <div class="fs-title">Document</div>
+        <div class="frow t"><div class="fg"><label class="fl">Nummer</label><input type="text" class="fi" id="dNum" readonly></div><div class="fg"><label class="fl">Datum</label><input type="date" class="fi" id="dDate"></div><div class="fg"><label class="fl" id="d2l">Vervaldatum</label><input type="date" class="fi" id="dDate2"></div></div>
+        <div class="frow"><div class="fg"><label class="fl">Status</label><select class="fsel" id="dStatus"></select></div><div class="fg"><label class="fl">BTW</label><select class="fsel" id="dBtw" onchange="calcTot()"><option value="21">21%</option><option value="9">9%</option><option value="0">0% (verlegd)</option></select></div></div>
+      </div>
+      <div class="fs">
+        <div class="fs-title">Regelitems</div>
+        <div class="litems"><div class="lhead"><span>Omschrijving</span><span>Aantal</span><span>Prijs (€)</span><span>Totaal</span><span></span></div><div id="lineItems"></div></div>
+        <button class="ladd" onclick="addLine()">+ Regel toevoegen</button>
+        <div class="tbox">
+          <div class="trow"><span>Subtotaal</span><span id="sub">€ 0,00</span></div>
+          <div class="trow"><span id="btwLbl">BTW (21%)</span><span id="btwAmt">€ 0,00</span></div>
+          <div class="trow tot"><span>Totaal incl. BTW</span><span id="grand">€ 0,00</span></div>
+        </div>
+      </div>
+      <div class="fs">
+        <div class="fs-title">Betalingsgegevens & opmerkingen</div>
+        <div class="frow s"><div class="fg"><textarea class="fta" id="dNotes" rows="4"></textarea></div></div>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-ghost" onclick="closeModal('docModal')">Annuleren</button>
+      <button class="btn btn-ghost" onclick="saveDoc(true)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Afdrukken
+      </button>
+      <button class="btn btn-y" onclick="saveDoc(false)">Opslaan ⚡</button>
+    </div>
+  </div>
+</div>
+
+<!-- KLANT PICKER -->
+<div class="mo" id="kpModal" onclick="closeMO(event,'kpModal')">
+  <div class="mbox" style="max-width:420px;">
+    <div class="mhead"><div class="mhead-title">Klant kiezen</div><button class="mclose" onclick="closeModal('kpModal')">✕</button></div>
+    <div class="kplist" id="kpList"></div>
+  </div>
+</div>
+
+<!-- KLANT MODAL -->
+<div class="mo" id="klantModal" onclick="closeMO(event,'klantModal')">
+  <div class="mbox" style="max-width:460px;">
+    <div class="mhead"><div class="mhead-title">Nieuwe klant</div><button class="mclose" onclick="closeModal('klantModal')">✕</button></div>
+    <div class="mbody">
+      <div class="frow s"><div class="fg"><label class="fl">Naam / Bedrijf</label><input type="text" class="fi" id="kNaam"></div></div>
+      <div class="frow"><div class="fg"><label class="fl">E-mail</label><input type="email" class="fi" id="kEmail"></div><div class="fg"><label class="fl">Telefoon</label><input type="text" class="fi" id="kTel"></div></div>
+      <div class="frow s"><div class="fg"><label class="fl">Adres</label><input type="text" class="fi" id="kAdres"></div></div>
+      <div class="frow"><div class="fg"><label class="fl">Type</label><select class="fsel" id="kType"><option value="particulier">Particulier</option><option value="zakelijk">Zakelijk</option></select></div><div class="fg"><label class="fl">BTW-nummer</label><input type="text" class="fi" id="kBtwNr" placeholder="NL000000000B01"></div></div>
+    </div>
+    <div class="mfoot"><button class="btn btn-ghost" onclick="closeModal('klantModal')">Annuleren</button><button class="btn btn-y" onclick="saveKlant()">Opslaan</button></div>
+  </div>
+</div>
+
+<div id="printArea"></div>
+<div class="toast" id="toast">⚡ <span id="toastMsg"></span></div>
+
+<script>
+const SHEETS_URL='https://script.google.com/macros/s/AKfycbxQa0lzYTrEVnGa8Dc12ZAKx2wYL89qjis_UImSxKWzjiiYBhQDxStyAJskiAGGT145TQ/exec';
+
+// ── STORAGE ──
+function ld(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
+function sv(k,v){localStorage.setItem(k,JSON.stringify(v));}
+let facturen=ld('ef_f')||[];
+let offertes=ld('ef_o')||[];
+let klanten=ld('ef_k')||[];
+
+// ── SYNC STATUS ──
+function setSyncStatus(state,text){
+  const dot=document.getElementById('syncDot');
+  const txt=document.getElementById('syncText');
+  dot.className='sync-dot'+(state==='syncing'?' syncing':state==='error'?' error':'');
+  txt.textContent=text;
+}
+
+// ── SYNC HELPERS ──
+function buildPayload(){
+  return encodeURIComponent(JSON.stringify({
+    action:'syncAll',
+    facturen,
+    offertes,
+    klanten
+  }));
+}
+
+// JSONP: laad een script-tag, omzeilt file:// CORS-blokkade
+function jsonpFetch(url){
+  return new Promise((resolve,reject)=>{
+    const cb='_ef_cb_'+Date.now();
+    const script=document.createElement('script');
+    const timeout=setTimeout(()=>{
+      cleanup();reject(new Error('Timeout'));
+    },15000);
+    function cleanup(){
+      delete window[cb];
+      if(script.parentNode)script.parentNode.removeChild(script);
+      clearTimeout(timeout);
+    }
+    window[cb]=function(data){cleanup();resolve(data);};
+    script.onerror=()=>{cleanup();reject(new Error('Script laden mislukt — controleer de SHEETS_URL'));};
+    script.src=url+(url.includes('?')?'&':'?')+'callback='+cb;
+    document.head.appendChild(script);
+  });
+}
+
+// ── SYNC: push alles naar Sheets, dan ophalen ──
+async function syncFromSheets(){
+  setSyncStatus('syncing','Synchroniseren...');
+  showToast('Synchroniseren met Google Sheet...');
+  try{
+    // 1. Push via JSONP (werkt ook vanuit file://)
+    const pushData=await jsonpFetch(SHEETS_URL+'?payload='+buildPayload());
+    if(!pushData.ok) throw new Error(pushData.error||'Push mislukt');
+
+    // 2. Pull via JSONP
+    const data=await jsonpFetch(SHEETS_URL);
+    if(data.facturen){facturen=data.facturen;sv('ef_f',facturen);}
+    if(data.offertes){offertes=data.offertes;sv('ef_o',offertes);}
+    if(data.klanten){klanten=data.klanten;sv('ef_k',klanten);}
+
+    setSyncStatus('ok','Gesynchroniseerd');
+    showToast('Sync compleet ⚡');
+    renderDashboard();updateBadges();
+  }catch(e){
+    setSyncStatus('error','Sync mislukt');
+    console.error('[EF Sync]',e);
+    if(window.location.protocol==='file:'){
+      showToast('Open via elektrofixer-starten.bat — niet als los bestand');
+      // Toon persistente banner als nog niet zichtbaar
+      if(!document.getElementById('fileBanner')){
+        const b=document.createElement('div');
+        b.id='fileBanner';
+        b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:#e05252;color:#fff;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;';
+        b.innerHTML='<span>⚠ Sync werkt niet vanuit file:// — dubbelklik op <strong>elektrofixer-starten.bat</strong> om de server te starten</span><button onclick="this.parentElement.remove()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;cursor:pointer;font-size:16px;padding:2px 8px;">✕</button>';
+        document.body.prepend(b);
+      }
+    } else {
+      showToast('Sync mislukt: '+e.message);
+    }
+  }
+}
+
+// ── AUTO-SYNC NA OPSLAAN (fire-and-forget) ──
+function syncToSheets(){
+  jsonpFetch(SHEETS_URL+'?payload='+buildPayload())
+    .catch(e=>console.warn('[EF AutoSync]',e.message));
+}
+
+// ── NAV ──
+function showView(v,el){
+  document.querySelectorAll('.view').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  if(el)el.classList.add('active');
+  const titles={dashboard:['Dashboard','Overzicht van je administratie'],facturen:['Facturen','Alle uitgaande facturen'],offertes:['Offertes','Alle verzonden offertes'],klanten:['Klanten','Opgeslagen klantgegevens']};
+  document.getElementById('topbarTitle').textContent=titles[v][0];
+  document.getElementById('topbarSub').textContent=titles[v][1];
+  if(v==='dashboard')renderDashboard();
+  if(v==='facturen')renderTable('ft',facturen,'factuur');
+  if(v==='offertes')renderTable('ot',offertes,'offerte');
+  if(v==='klanten')renderKlanten();
+}
+
+function switchTab(id,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('fr').style.display=id==='fr'?'block':'none';
+  document.getElementById('or').style.display=id==='or'?'block':'none';
+}
+
+function updateBadges(){
+  document.getElementById('nb-f').textContent=facturen.length;
+  document.getElementById('nb-o').textContent=offertes.length;
+  document.getElementById('nb-k').textContent=klanten.length;
+}
+
+// ── HELPERS ──
+function fmt(n){return'€ '+Number(n).toLocaleString('nl-NL',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtDate(d){if(!d)return'—';const[y,m,day]=d.split('-');const mo=['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];return`${parseInt(day)} ${mo[parseInt(m)-1]} ${y}`;}
+function totalDoc(doc){return(doc.lines||[]).reduce((s,l)=>s+(parseFloat(l.qty)||0)*(parseFloat(l.price)||0),0);}
+
+// ── DASHBOARD ──
+function renderDashboard(){
+  const totalF=facturen.reduce((s,f)=>s+totalDoc(f),0);
+  const betaald=facturen.filter(f=>f.status==='betaald').reduce((s,f)=>s+totalDoc(f),0);
+  const open=facturen.filter(f=>f.status==='verzonden').length;
+  const openBedrag=facturen.filter(f=>f.status==='verzonden').reduce((s,f)=>s+totalDoc(f),0);
+  document.getElementById('statsRow').innerHTML=`
+    <div class="stat"><div class="stat-label">Totale omzet</div><div class="stat-val">${fmt(totalF)}</div><div class="stat-sub">${facturen.length} facturen · excl. BTW</div><div class="stat-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div></div>
+    <div class="stat"><div class="stat-label">Ontvangen</div><div class="stat-val">${fmt(betaald)}</div><div class="stat-sub">Betaalde facturen</div><div class="stat-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+    <div class="stat"><div class="stat-label">Openstaand</div><div class="stat-val" style="color:${open>0?'var(--red)':'var(--green)'};">${fmt(openBedrag)}</div><div class="stat-sub">${open} factuur${open===1?'':'s'} nog open</div><div class="stat-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div></div>
+    <div class="stat"><div class="stat-label">Offertes</div><div class="stat-val">${offertes.length}</div><div class="stat-sub">${offertes.filter(o=>o.status==='geaccepteerd').length} geaccepteerd</div><div class="stat-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div></div>`;
+  renderTable('fr',[...facturen].reverse().slice(0,6),'factuur');
+  renderTable('or',[...offertes].reverse().slice(0,6),'offerte');
+  updateBadges();
+}
+
+// ── TABLES ──
+function renderTable(id,docs,type){
+  const el=document.getElementById(id);
+  if(!docs.length){el.innerHTML=`<div class="empty"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><p>Geen ${type}en</p></div>`;return;}
+  const bc={concept:'bb',verzonden:'by',betaald:'bg',verlopen:'br',geaccepteerd:'bg',afgewezen:'br'};
+  el.innerHTML=`<table><thead><tr><th>Nummer</th><th>Klant</th><th>Datum</th><th>Bedrag excl.</th><th>Status</th><th></th></tr></thead><tbody>${
+    docs.map(d=>`<tr>
+      <td style="font-family:var(--fd);font-weight:700;color:var(--y);letter-spacing:0.04em;">${d.num}</td>
+      <td style="font-weight:400;">${d.clientName||'—'}</td>
+      <td style="color:var(--dim);">${d.date||'—'}</td>
+      <td style="font-family:var(--fd);font-weight:700;">${fmt(totalDoc(d))}</td>
+      <td><span class="badge ${bc[d.status]||'bb'}">${d.status}</span></td>
+      <td><div class="row-acts">
+        <button class="ibt" title="Bewerken" onclick="editDoc('${d.id}','${type}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+        <button class="ibt ml" title="Mailen" onclick="mailDoc('${d.id}','${type}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></button>
+        <button class="ibt" title="Afdrukken" onclick="printDoc('${d.id}','${type}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+        <button class="ibt rd" title="Verwijderen" onclick="deleteDoc('${d.id}','${type}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+      </div></td>
+    </tr>`).join('')
+  }</tbody></table>`;
+}
+function filterTable(id,q){document.querySelectorAll('#'+id+' tbody tr').forEach(r=>{r.style.display=r.textContent.toLowerCase().includes(q.toLowerCase())?'':'none';});}
+
+// ── MAIL ──
+function mailDoc(id,type){
+  const arr=type==='factuur'?facturen:offertes;
+  const doc=arr.find(d=>d.id===id);if(!doc)return;
+  const sub=totalDoc(doc),pct=parseInt(doc.btw)||21,grand=sub*(1+pct/100);
+  const label=type==='factuur'?'Factuur':'Offerte';
+  const subj=encodeURIComponent(`${label} ${doc.num} — Elektrofixer`);
+  const body=encodeURIComponent(`Geachte ${doc.clientName||''},\n\nHierbij ontvangt u ${type==='factuur'?'de factuur':'de offerte'} met nummer ${doc.num}.\n\nDatum: ${doc.date||'—'}\n${type==='factuur'?'Vervaldatum':'Geldig tot'}: ${doc.date2||'—'}\nTotaalbedrag incl. BTW: ${fmt(grand)}\n\n${doc.notes||''}\n\nMet vriendelijke groet,\nElektrofixer\n+31 6 24 096 236\nElektrofixer@outlook.com\nwww.elektrofixer.nl`);
+  window.location.href=`mailto:${doc.clientEmail||''}?subject=${subj}&body=${body}`;
+  showToast('Outlook wordt geopend');
+}
+
+// ── MODAL ──
+function openModal(type){
+  document.getElementById('editDocId').value='';
+  document.getElementById('docType').value=type;
+  document.getElementById('modalTitle').textContent=type==='factuur'?'Nieuwe factuur':'Nieuwe offerte';
+  document.getElementById('d2l').textContent=type==='factuur'?'Vervaldatum':'Geldig tot';
+  document.getElementById('dStatus').innerHTML=type==='factuur'
+    ?'<option value="concept">Concept</option><option value="verzonden">Verzonden</option><option value="betaald">Betaald</option><option value="verlopen">Verlopen</option>'
+    :'<option value="concept">Concept</option><option value="verzonden">Verzonden</option><option value="geaccepteerd">Geaccepteerd</option><option value="afgewezen">Afgewezen</option>';
+  const arr=type==='factuur'?facturen:offertes;
+  const prefix=type==='factuur'?'F':'O';
+  const year=new Date().getFullYear();
+  const next=(arr.filter(d=>d.num.includes(String(year))).length+1).toString().padStart(3,'0');
+  document.getElementById('dNum').value=`${prefix}-${year}-${next}`;
+  const today=new Date().toISOString().split('T')[0];
+  document.getElementById('dDate').value=today;
+  const due=new Date();due.setDate(due.getDate()+14);
+  document.getElementById('dDate2').value=due.toISOString().split('T')[0];
+  document.getElementById('cName').value='';document.getElementById('cEmail').value='';
+  document.getElementById('cAddr').value='';document.getElementById('cTel').value='';
+  document.getElementById('selKlantInfo').textContent='Geen klant geselecteerd';
+  document.getElementById('selKlantInfo').style.color='';
+  document.getElementById('dNotes').value=type==='factuur'
+    ?'Betaling binnen 14 dagen na factuurdatum.\nIBAN: NL00 BANK 0000 0000 00 t.n.v. Elektrofixer\nKvK: 42063162\n\nBij niet-tijdige betaling bent u van rechtswege in verzuim en bent u de wettelijke incassokosten verschuldigd conform de Wet normering buitengerechtelijke incassokosten (WIK).\n\nAlle geleverde materialen blijven eigendom van Elektrofixer totdat de factuur volledig is voldaan.\n\nElektrofixer is niet aansprakelijk voor gevolgschade die ontstaat na correcte oplevering van de werkzaamheden.'
+    :'Deze offerte is 30 dagen geldig.\nBij akkoord kunt u contact opnemen via +31 6 24 096 236 of Elektrofixer@outlook.com\n\nBij niet-tijdige betaling bent u van rechtswege in verzuim en bent u de wettelijke incassokosten verschuldigd conform de Wet normering buitengerechtelijke incassokosten (WIK).\n\nAlle geleverde materialen blijven eigendom van Elektrofixer totdat de factuur volledig is voldaan.\n\nElektrofixer is niet aansprakelijk voor gevolgschade die ontstaat na correcte oplevering van de werkzaamheden.';
+  document.getElementById('lineItems').innerHTML='';
+  addLine();calcTot();
+  document.getElementById('docModal').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function editDoc(id,type){
+  const arr=type==='factuur'?facturen:offertes;
+  const doc=arr.find(d=>d.id===id);if(!doc)return;
+  openModal(type);
+  document.getElementById('editDocId').value=id;
+  document.getElementById('modalTitle').textContent=type==='factuur'?'Factuur bewerken':'Offerte bewerken';
+  document.getElementById('dNum').value=doc.num;
+  document.getElementById('dDate').value=doc.date;
+  document.getElementById('dDate2').value=doc.date2;
+  document.getElementById('dStatus').value=doc.status;
+  document.getElementById('dBtw').value=doc.btw||'21';
+  document.getElementById('cName').value=doc.clientName||'';
+  document.getElementById('cEmail').value=doc.clientEmail||'';
+  document.getElementById('cAddr').value=doc.clientAddress||'';
+  document.getElementById('cTel').value=doc.clientPhone||'';
+  document.getElementById('dNotes').value=doc.notes||'';
+  if(doc.clientName){document.getElementById('selKlantInfo').innerHTML=`<strong>${doc.clientName}</strong>`;document.getElementById('selKlantInfo').style.color='';}
+  document.getElementById('lineItems').innerHTML='';
+  (doc.lines||[]).forEach(l=>addLine(l));calcTot();
+}
+
+function closeModal(id){document.getElementById(id).classList.remove('open');document.body.style.overflow='';}
+function closeMO(e,id){if(e.target===document.getElementById(id))closeModal(id);}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){['docModal','kpModal','klantModal'].forEach(closeModal);}});
+
+// ── KLANT PICKER ──
+function openKlantPicker(){
+  const list=document.getElementById('kpList');
+  if(!klanten.length){
+    list.innerHTML=`<div class="empty" style="padding:32px;"><p>Nog geen klanten</p><button class="btn btn-y btn-sm" style="margin-top:16px;" onclick="closeModal('kpModal');openKlantModal()">+ Nieuwe klant</button></div>`;
+  }else{
+    list.innerHTML=klanten.map(k=>`<div class="kpitem" onclick="selectKlant('${k.id}')"><div><div class="kpname">${k.naam}</div><div class="kpdet">${k.email||''}${k.tel?' · '+k.tel:''}</div></div><span class="kparrow">→</span></div>`).join('');
+  }
+  document.getElementById('kpModal').classList.add('open');
+}
+function selectKlant(id){
+  const k=klanten.find(k=>k.id===id);if(!k)return;
+  document.getElementById('cName').value=k.naam||'';
+  document.getElementById('cEmail').value=k.email||'';
+  document.getElementById('cAddr').value=k.adres||'';
+  document.getElementById('cTel').value=k.tel||'';
+  document.getElementById('selKlantInfo').innerHTML=`<strong>${k.naam}</strong> &nbsp;·&nbsp; ${k.email||'geen email'}`;
+  closeModal('kpModal');showToast('Klant geselecteerd');
+}
+
+// ── KLANTEN ──
+function openKlantModal(){document.getElementById('klantModal').classList.add('open');document.body.style.overflow='hidden';}
+function saveKlant(){
+  const k={id:Date.now().toString(),naam:document.getElementById('kNaam').value,email:document.getElementById('kEmail').value,tel:document.getElementById('kTel').value,adres:document.getElementById('kAdres').value,type:document.getElementById('kType').value,btwnr:document.getElementById('kBtwNr').value};
+  if(!k.naam){showToast('Vul een naam in');return;}
+  klanten.push(k);sv('ef_k',klanten);showToast('Klant opgeslagen');closeModal('klantModal');renderKlanten();updateBadges();
+}
+function renderKlanten(){
+  const el=document.getElementById('kt');
+  if(!klanten.length){el.innerHTML='<div class="empty"><p>Nog geen klanten</p></div>';return;}
+  el.innerHTML=`<table><thead><tr><th>Naam</th><th>E-mail</th><th>Telefoon</th><th>Type</th><th></th></tr></thead><tbody>${
+    klanten.map(k=>`<tr><td style="font-weight:500;">${k.naam}</td><td style="color:var(--dim);">${k.email||'—'}</td><td style="color:var(--dim);">${k.tel||'—'}</td><td><span class="badge ${k.type==='zakelijk'?'bb':'by'}">${k.type}</span></td><td><div class="row-acts"><button class="ibt rd" onclick="deleteKlant('${k.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button></div></td></tr>`).join('')
+  }</tbody></table>`;
+}
+function deleteKlant(id){if(!confirm('Klant verwijderen?'))return;klanten=klanten.filter(k=>k.id!==id);sv('ef_k',klanten);renderKlanten();updateBadges();}
+
+// ── LINE ITEMS ──
+function addLine(data){
+  const row=document.createElement('div');row.className='lrow';
+  row.innerHTML=`<input type="text" placeholder="Omschrijving werkzaamheden" value="${data?.desc||''}" oninput="calcTot()"><input type="number" placeholder="1" value="${data?.qty||1}" min="0" step="0.01" oninput="calcTot()" style="text-align:center;"><input type="number" placeholder="0.00" value="${data?.price||''}" min="0" step="0.01" oninput="calcTot()"><div class="ltot">€ 0,00</div><button class="lrm" onclick="this.parentElement.remove();calcTot();">✕</button>`;
+  document.getElementById('lineItems').appendChild(row);calcTot();
+}
+function calcTot(){
+  let s=0;
+  document.querySelectorAll('#lineItems .lrow').forEach(row=>{
+    const inp=row.querySelectorAll('input');
+    const q=parseFloat(inp[1].value)||0,p=parseFloat(inp[2].value)||0,t=q*p;
+    s+=t;row.querySelector('.ltot').textContent='€ '+t.toLocaleString('nl-NL',{minimumFractionDigits:2,maximumFractionDigits:2});
+  });
+  const pct=parseInt(document.getElementById('dBtw').value)||21;
+  const btw=s*pct/100;
+  document.getElementById('sub').textContent=fmt(s);
+  document.getElementById('btwLbl').textContent=`BTW (${pct}%)`;
+  document.getElementById('btwAmt').textContent=fmt(btw);
+  document.getElementById('grand').textContent=fmt(s+btw);
+}
+
+// ── SAVE DOC ──
+function getDocData(){
+  const lines=[];
+  document.querySelectorAll('#lineItems .lrow').forEach(row=>{
+    const inp=row.querySelectorAll('input');
+    lines.push({desc:inp[0].value,qty:inp[1].value,price:inp[2].value});
+  });
+  return{id:document.getElementById('editDocId').value||Date.now().toString(),num:document.getElementById('dNum').value,date:document.getElementById('dDate').value,date2:document.getElementById('dDate2').value,status:document.getElementById('dStatus').value,btw:document.getElementById('dBtw').value,clientName:document.getElementById('cName').value,clientEmail:document.getElementById('cEmail').value,clientAddress:document.getElementById('cAddr').value,clientPhone:document.getElementById('cTel').value,notes:document.getElementById('dNotes').value,lines,createdAt:new Date().toISOString()};
+}
+function saveDoc(andPrint){
+  const type=document.getElementById('docType').value;
+  const doc=getDocData();
+  const editId=document.getElementById('editDocId').value;
+  if(type==='factuur'){if(editId){const i=facturen.findIndex(d=>d.id===editId);if(i>=0)facturen[i]=doc;}else facturen.push(doc);sv('ef_f',facturen);}
+  else{if(editId){const i=offertes.findIndex(d=>d.id===editId);if(i>=0)offertes[i]=doc;}else offertes.push(doc);sv('ef_o',offertes);}
+  syncToSheets();
+  showToast(`${type.charAt(0).toUpperCase()+type.slice(1)} opgeslagen`);
+  closeModal('docModal');renderDashboard();
+  if(andPrint)printDocObj(doc,type);
+}
+function deleteDoc(id,type){
+  if(!confirm('Document verwijderen?'))return;
+  if(type==='factuur'){facturen=facturen.filter(d=>d.id!==id);sv('ef_f',facturen);renderTable('ft',facturen,'factuur');}
+  else{offertes=offertes.filter(d=>d.id!==id);sv('ef_o',offertes);renderTable('ot',offertes,'offerte');}
+  renderDashboard();showToast('Verwijderd');
+}
+function printDoc(id,type){const arr=type==='factuur'?facturen:offertes;const doc=arr.find(d=>d.id===id);if(doc)printDocObj(doc,type);}
+
+// ── PRINT ──
+function printDocObj(doc,type){
+  const sub=(doc.lines||[]).reduce((s,l)=>s+(parseFloat(l.qty)||0)*(parseFloat(l.price)||0),0);
+  const pct=parseInt(doc.btw)||21;const btw=sub*pct/100;const grand=sub+btw;
+  const label=type==='factuur'?'FACTUUR':'OFFERTE';
+  const d2label=type==='factuur'?'Vervaldatum':'Geldig tot';
+  const allNotes=(doc.notes||'').split('\n');
+  const payLines=[],disLines=[];let inDis=false;
+  allNotes.forEach(l=>{if(l.startsWith('Bij niet-tijdige')||l.startsWith('Alle geleverde')||l.startsWith('Elektrofixer is niet'))inDis=true;if(inDis)disLines.push(l);else payLines.push(l);});
+  const payText=payLines.filter(l=>l.trim()).join('<br>');
+  const disText=disLines.filter(l=>l.trim()).join('<br>');
+  document.getElementById('printArea').innerHTML=`
+<div class="pp">
+  <div class="ptop">
+    <div><div class="pln">Elektro<span>fixer</span></div><div class="pls">Elektrofixer@outlook.com · +31 6 24 096 236<br>www.elektrofixer.nl · KvK: 42063162 · Regio Noord-Nederland</div></div>
+    <div class="pdb"><div class="pdt">${label}</div><div class="pdn">${doc.num}</div></div>
+  </div>
+  <div class="pstr"></div>
+  <div class="pbod">
+    <div class="pmeta">
+      <div><div class="pml">Datum</div><div class="pmv">${fmtDate(doc.date)}</div></div>
+      <div><div class="pml">${d2label}</div><div class="pmv">${fmtDate(doc.date2)}</div></div>
+      <div><div class="pml">Status</div><div class="pmv">${doc.status}</div></div>
+      <div><div class="pml">BTW</div><div class="pmv">${pct}%</div></div>
+    </div>
+    <div class="ppar">
+      <div><div class="pparl">Aan</div><div class="pparn">${doc.clientName||'—'}</div><div class="ppard">${doc.clientAddress||''}<br>${doc.clientEmail||''}<br>${doc.clientPhone||''}</div></div>
+      <div><div class="pparl">Van</div><div class="pparn">Elektrofixer</div><div class="ppard">Regio Noord-Nederland<br>Elektrofixer@outlook.com<br>+31 6 24 096 236</div></div>
+    </div>
+    <table class="ptbl">
+      <thead><tr><th>Omschrijving</th><th>Aantal</th><th>Prijs (excl.)</th><th>Totaal (excl.)</th></tr></thead>
+      <tbody>${(doc.lines||[]).map(l=>`<tr><td>${l.desc||'—'}</td><td>${l.qty}</td><td>${fmt(l.price)}</td><td>${fmt((parseFloat(l.qty)||0)*(parseFloat(l.price)||0))}</td></tr>`).join('')}</tbody>
+    </table>
+    <div class="ptwrap"><div class="ptot">
+      <div class="ptotr"><span>Subtotaal excl. BTW</span><span>${fmt(sub)}</span></div>
+      <div class="ptotr"><span>BTW (${pct}%)</span><span>${fmt(btw)}</span></div>
+      <div class="ptotg"><span>Totaal</span><span>${fmt(grand)}</span></div>
+    </div></div>
+    ${payText?`<div class="pnote"><div class="pnotel">Betalingsgegevens</div>${payText}</div>`:''}
+  </div>
+  <div class="pdis-block">
+    ${disText?`<div class="pdis">${disText}</div>`:''}
+    <div class="pfoot">
+      <span>Elektrofixer · KvK: 42063162</span>
+      <span class="pfoot-acc">⚡ ELEKTROFIXER</span>
+      <span>${doc.num} · ${fmtDate(doc.date)}</span>
+    </div>
+  </div>
+</div>`;
+  setTimeout(()=>window.print(),120);
+}
+
+// ── TOAST ──
+function showToast(msg){const t=document.getElementById('toast');document.getElementById('toastMsg').textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+
+// ── INIT ──
+renderDashboard();
+</script>
+</body>
+</html>
